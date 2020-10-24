@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/filecoin-project/go-state-types/crypto"
-	"github.com/filecoin-project/specs-actors/actors/util/adt"
+	blockadt "github.com/filecoin-project/specs-actors/actors/util/adt"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	"golang.org/x/xerrors"
@@ -27,7 +27,17 @@ func MinerCreateBlock(ctx context.Context, sm *stmgr.StateManager, w api.WalletA
 		return nil, xerrors.Errorf("failed to load tipset state: %w", err)
 	}
 
-	worker, err := stmgr.GetMinerWorkerRaw(ctx, sm, st, bt.Miner)
+	lbts, err := stmgr.GetLookbackTipSetForRound(ctx, sm, pts, bt.Epoch)
+	if err != nil {
+		return nil, xerrors.Errorf("getting lookback miner actor state: %w", err)
+	}
+
+	lbst, _, err := sm.TipSetState(ctx, lbts)
+	if err != nil {
+		return nil, err
+	}
+
+	worker, err := stmgr.GetMinerWorkerRaw(ctx, sm, lbst, bt.Miner)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to get miner worker: %w", err)
 	}
@@ -167,8 +177,8 @@ func aggregateSignatures(sigs []crypto.Signature) (*crypto.Signature, error) {
 	}, nil
 }
 
-func toArray(store adt.Store, cids []cid.Cid) (cid.Cid, error) {
-	arr := adt.MakeEmptyArray(store)
+func toArray(store blockadt.Store, cids []cid.Cid) (cid.Cid, error) {
+	arr := blockadt.MakeEmptyArray(store)
 	for i, c := range cids {
 		oc := cbg.CborCid(c)
 		if err := arr.Set(uint64(i), &oc); err != nil {
