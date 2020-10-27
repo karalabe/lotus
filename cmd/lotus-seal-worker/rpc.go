@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/google/uuid"
+	"sync/atomic"
 
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/xerrors"
@@ -17,6 +19,8 @@ type worker struct {
 
 	localStore *stores.Local
 	ls         stores.LocalStorage
+
+	disabled int64
 }
 
 func (w *worker) Version(context.Context) (build.Version, error) {
@@ -40,6 +44,36 @@ func (w *worker) StorageAddLocal(ctx context.Context, path string) error {
 	}
 
 	return nil
+}
+
+func (w *worker) SetEnabled(ctx context.Context, enabled bool) error {
+	disabled := int64(1)
+	if enabled {
+		disabled = 0
+	}
+	atomic.StoreInt64(&w.disabled, disabled)
+	return nil
+}
+
+func (w *worker) Enabled(ctx context.Context) (bool, error) {
+	return atomic.LoadInt64(&w.disabled) == 0, nil
+}
+
+func (w *worker) WaitQuiet(ctx context.Context) error {
+	w.LocalWorker.WaitQuiet() // uses WaitGroup under the hood no no ctx :/
+	return nil
+}
+
+func (w *worker) ProcessSession(ctx context.Context) (uuid.UUID, error) {
+	return w.LocalWorker.Session(ctx)
+}
+
+func (w *worker) Session(ctx context.Context) (uuid.UUID, error) {
+	if atomic.LoadInt64(&w.disabled) == 1 {
+		return uuid.UUID{}, xerrors.Errorf("worker disabled")
+	}
+
+	return w.LocalWorker.Session(ctx)
 }
 
 var _ storiface.WorkerCalls = &worker{}
