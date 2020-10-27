@@ -167,6 +167,7 @@ type FullNodeStruct struct {
 		ClientRetrieve                            func(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) error                                       `perm:"admin"`
 		ClientRetrieveWithEvents                  func(ctx context.Context, order api.RetrievalOrder, ref *api.FileRef) (<-chan marketevents.RetrievalEvent, error) `perm:"admin"`
 		ClientQueryAsk                            func(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error)                    `perm:"read"`
+		ClientDealPieceCID                        func(ctx context.Context, root cid.Cid) (api.DataCIDSize, error)                                                  `perm:"read"`
 		ClientCalcCommP                           func(ctx context.Context, inpath string) (*api.CommPRet, error)                                                   `perm:"read"`
 		ClientGenCar                              func(ctx context.Context, ref api.FileRef, outpath string) error                                                  `perm:"write"`
 		ClientDealSize                            func(ctx context.Context, root cid.Cid) (api.DataSize, error)                                                     `perm:"read"`
@@ -384,7 +385,13 @@ type WorkerStruct struct {
 		Remove          func(ctx context.Context, sector abi.SectorID) error `perm:"admin"`
 		StorageAddLocal func(ctx context.Context, path string) error         `perm:"admin"`
 
-		Session func(context.Context) (uuid.UUID, error) `perm:"admin"`
+		SetEnabled func(ctx context.Context, enabled bool) error `perm:"admin"`
+		Enabled    func(ctx context.Context) (bool, error)       `perm:"admin"`
+
+		WaitQuiet func(ctx context.Context) error `perm:"admin"`
+
+		ProcessSession func(context.Context) (uuid.UUID, error) `perm:"admin"`
+		Session        func(context.Context) (uuid.UUID, error) `perm:"admin"`
 	}
 }
 
@@ -576,6 +583,11 @@ func (c *FullNodeStruct) ClientRetrieveWithEvents(ctx context.Context, order api
 func (c *FullNodeStruct) ClientQueryAsk(ctx context.Context, p peer.ID, miner address.Address) (*storagemarket.StorageAsk, error) {
 	return c.Internal.ClientQueryAsk(ctx, p, miner)
 }
+
+func (c *FullNodeStruct) ClientDealPieceCID(ctx context.Context, root cid.Cid) (api.DataCIDSize, error) {
+	return c.Internal.ClientDealPieceCID(ctx, root)
+}
+
 func (c *FullNodeStruct) ClientCalcCommP(ctx context.Context, inpath string) (*api.CommPRet, error) {
 	return c.Internal.ClientCalcCommP(ctx, inpath)
 }
@@ -1536,6 +1548,22 @@ func (w *WorkerStruct) Remove(ctx context.Context, sector abi.SectorID) error {
 
 func (w *WorkerStruct) StorageAddLocal(ctx context.Context, path string) error {
 	return w.Internal.StorageAddLocal(ctx, path)
+}
+
+func (w *WorkerStruct) SetEnabled(ctx context.Context, enabled bool) error {
+	return w.Internal.SetEnabled(ctx, enabled)
+}
+
+func (w *WorkerStruct) Enabled(ctx context.Context) (bool, error) {
+	return w.Internal.Enabled(ctx)
+}
+
+func (w *WorkerStruct) WaitQuiet(ctx context.Context) error {
+	return w.Internal.WaitQuiet(ctx)
+}
+
+func (w *WorkerStruct) ProcessSession(ctx context.Context) (uuid.UUID, error) {
+	return w.Internal.ProcessSession(ctx)
 }
 
 func (w *WorkerStruct) Session(ctx context.Context) (uuid.UUID, error) {
