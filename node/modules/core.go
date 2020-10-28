@@ -99,7 +99,7 @@ func DrandBootstrap(ds dtypes.DrandSchedule) (dtypes.DrandBootstrap, error) {
 		addrs, err := addrutil.ParseAddresses(context.TODO(), d.Config.Relays)
 		if err != nil {
 			log.Errorf("reoslving drand relays addresses: %+v", err)
-			return res, nil
+			continue
 		}
 		res = append(res, addrs...)
 	}
