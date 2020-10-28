@@ -21,7 +21,7 @@ func (m *Manager) WorkerStats() map[uuid.UUID]storiface.WorkerStats {
 
 			MemUsedMin: handle.active.memUsedMin,
 			MemUsedMax: handle.active.memUsedMax,
-			GpuUsed:    handle.active.gpuUsed,
+			GpuMemUsed: handle.active.gpuMemUsed,
 			CpuUse:     handle.active.cpuUse,
 		}
 	}

@@ -68,11 +68,11 @@ var sealingWorkersCmd = &cli.Command{
 		})
 
 		for _, stat := range st {
-			gpuUse := "not "
+			gpuUse := "not"
 			gpuCol := color.FgBlue
-			if stat.GpuUsed {
+			if stat.GpuMemUsed > 0 {
 				gpuCol = color.FgGreen
-				gpuUse = ""
+				gpuUse = fmt.Sprintf("%d MB", stat.GpuMemUsed/1024/1024)
 			}
 
 			var disabled string
@@ -103,6 +103,10 @@ var sealingWorkersCmd = &cli.Command{
 				color.GreenString(strings.Repeat("|", vmemBarsUsed)) +
 				strings.Repeat(" ", int(barCols)-vmemBarsUsed-vmemBarsRes)
 
+			gramBarsUsed := int(stat.GpuMemUsed * barCols / stat.Info.Resources.MemGPU)
+			gramBar := color.GreenString(strings.Repeat("|", gramBarsUsed)) +
+				strings.Repeat(" ", int(barCols)-gramBarsUsed)
+
 			fmt.Printf("\tRAM:  [%s] %d%% %s/%s\n", ramBar,
 				(stat.Info.Resources.MemReserved+stat.MemUsedMin)*100/stat.Info.Resources.MemPhysical,
 				types.SizeStr(types.NewInt(stat.Info.Resources.MemReserved+stat.MemUsedMin)),
@@ -113,11 +117,15 @@ var sealingWorkersCmd = &cli.Command{
 				types.SizeStr(types.NewInt(stat.Info.Resources.MemReserved+stat.MemUsedMax)),
 				types.SizeStr(types.NewInt(vmem)))
 
+			fmt.Printf("\tGMEM: [%s] %d%% %s/%s\n", gramBar,
+				(stat.GpuMemUsed)*100/stat.Info.Resources.MemGPU,
+				types.SizeStr(types.NewInt(stat.GpuMemUsed)),
+				types.SizeStr(types.NewInt(stat.Info.Resources.MemGPU)))
+
 			for _, gpu := range stat.Info.Resources.GPUs {
-				fmt.Printf("\tGPU: %s\n", color.New(gpuCol).Sprintf("%s, %sused", gpu, gpuUse))
+				fmt.Printf("\tGPU: %s\n", color.New(gpuCol).Sprintf("%s, %s used", gpu, gpuUse))
 			}
 		}
-
 		return nil
 	},
 }

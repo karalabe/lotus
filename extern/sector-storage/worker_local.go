@@ -494,6 +494,7 @@ func (l *LocalWorker) Info(context.Context) (storiface.WorkerInfo, error) {
 			MemPhysical: mem.Total,
 			MemSwap:     memSwap,
 			MemReserved: mem.VirtualUsed + mem.Total - mem.Available, // TODO: sub this process
+			MemGPU:      10 << 30,
 			CPUs:        uint64(runtime.NumCPU()),
 			GPUs:        gpus,
 		},
